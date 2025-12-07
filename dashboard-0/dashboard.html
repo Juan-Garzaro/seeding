@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard — Apple Music Insights</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f1f1f1;
+    }
+
+    header {
+      background: #111;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 28px;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      width: 90%;
+      margin: auto;
+      padding-top: 20px;
+    }
+
+    h2 {
+      margin-top: 40px;
+      color: #333;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      margin: 20px 0;
+      border-radius: 10px;
+      box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background: #222;
+      color: white;
+    }
+
+    canvas {
+      margin-top: 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>Dashboard — Apple Music Insights</header>
+
+  <div class="container">
+
+    <!-- METRICA GLOBAL -->
+    <div class="card">
+      <h2>Total Streams Registrados</h2>
+      <h1 id="total-streams" style="font-size:40px; color:#d6336c;">Cargando...</h1>
+      <canvas id="streamsChart" height="120"></canvas>
+    </div>
+
+    <!-- TOP CANCIONES -->
+    <div class="card">
+      <h2>Top Canciones</h2>
+      <table id="songs-table">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Género</th>
+            <th>Duración</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <canvas id="songsChart" height="120"></canvas>
+    </div>
+
+    <!-- TOP ARTISTAS -->
+    <div class="card">
+      <h2>Top Artistas</h2>
+      <table id="artists-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Popularidad</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <canvas id="artistsChart" height="120"></canvas>
+    </div>
+
+    <!-- TOP GENEROS -->
+    <div class="card">
+      <h2>Top Géneros</h2>
+      <table id="genres-table">
+        <thead>
+          <tr>
+            <th>Género</th>
+            <th>Cantidad</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <canvas id="genresChart" height="120"></canvas>
+    </div>
+
+  </div>
+
+  <script>
+    const API = "http://localhost:3000/api";
+
+    //-------------------------------------
+    // TOTAL STREAMS
+    //-------------------------------------
+    fetch(`${API}/streams/count`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("total-streams").textContent = data.total;
+
+        // GRAFICA TOTAL STREAMS
+        new Chart(document.getElementById('streamsChart'), {
+          type: 'bar',
+          data: {
+            labels: ["Total Streams"],
+            datasets: [{
+              label: "Streams",
+              data: [data.total],
+              backgroundColor: "#ff4d6d"
+            }]
+          }
+        });
+      });
+
+    //-------------------------------------
+    // TOP SONGS
+    //-------------------------------------
+    fetch(`${API}/top-songs`)
+      .then(res => res.json())
+      .then(rows => {
+        const tbody = document.querySelector("#songs-table tbody");
+        const labels = [];
+        const durations = [];
+
+        rows.forEach(song => {
+          labels.push(song.title);
+          durations.push(song.duration);
+          tbody.innerHTML += `
+            <tr>
+              <td>${song.title}</td>
+              <td>${song.genre}</td>
+              <td>${song.duration}s</td>
+            </tr>
+          `;
+        });
+
+        // GRAFICA TOP SONGS
+        new Chart(document.getElementById('songsChart'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: "Duración (s)",
+              data: durations,
+              borderColor: "#1e90ff",
+              borderWidth: 2
+            }]
+          }
+        });
+      });
+
+    //-------------------------------------
+    // TOP ARTISTS
+    //-------------------------------------
+    fetch(`${API}/top-artists`)
+      .then(res => res.json())
+      .then(rows => {
+        const tbody = document.querySelector("#artists-table tbody");
+        const labels = [];
+        const popularity = [];
+
+        rows.forEach(artist => {
+          labels.push(artist.name);
+          popularity.push(artist.popularity);
+          tbody.innerHTML += `
+            <tr>
+              <td>${artist.name}</td>
+              <td>${artist.popularity}</td>
+            </tr>
+          `;
+        });
+
+        // GRAFICA TOP ARTISTS
+        new Chart(document.getElementById('artistsChart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: "Popularidad",
+              data: popularity,
+              backgroundColor: "#6a4c93"
+            }]
+          }
+        });
+      });
+
+    //-------------------------------------
+    // TOP GENRES
+    //-------------------------------------
+    fetch(`${API}/top-genres`)
+      .then(res => res.json())
+      .then(rows => {
+        const tbody = document.querySelector("#genres-table tbody");
+        const labels = [];
+        const totals = [];
+
+        rows.forEach(g => {
+          labels.push(g._id);
+          totals.push(g.total);
+          tbody.innerHTML += `
+            <tr>
+              <td>${g._id}</td>
+              <td>${g.total}</td>
+            </tr>
+          `;
+        });
+
+        // GRAFICA TOP GENRES
+        new Chart(document.getElementById('genresChart'), {
+          type: 'pie',
+          data: {
+            labels,
+            datasets: [{
+              data: totals,
+              backgroundColor: ["#ff6b6b","#4dabf7","#51cf66","#845ef7","#fcc419"]
+            }]
+          }
+        });
+      });
+
+  </script>
+
+</body>
+</html>

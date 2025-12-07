@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:7
+    restart: always
+    container_name: apple-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: applemusic
+
+  api:
+    build: ./api
+    container_name: apple-api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:
